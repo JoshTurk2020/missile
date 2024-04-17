@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Grammar Shooter</title>
+    <style>
+        body {
+            background-color: #000;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: 0 auto;
+        }
+
+        #game-canvas {
+            background-color: #000;
+            border: 2px solid #fff;
+        }
+
+        #question-container {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+        }
+
+        #question {
+            color: #fff;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="question-container">
+            <p id="question"></p>
+        </div>
+    </div>
+
+    <script>
+        // Get the canvas element
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas dimensions
+        canvas.width = 800;
+        canvas.height = 600;
+
+        // Game variables
+        let player;
+        let bullets = [];
+        let options = [];
+        let stage = 1;
+        let questionCount = 0;
+        let score = 0;
+
+        // Grammar questions and answer options
+        const grammarQuestions = [
+            {
+                question: "She _____ her homework every day.",
+                options: ["do", "does", "is doing", "did"],
+                answer: "does"
+            },
+            // Add more questions here...
+        ];
+
+        // Player class
+        class Player {
+            constructor() {
+                this.width = 50;
+                this.height = 50;
+                this.x = canvas.width / 2 - this.width / 2;
+                this.y = canvas.height - this.height - 10;
+                this.speed = 5;
+                this.color = '#0f0';
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+
+            moveLeft() {
+                if (this.x > 0) {
+                    this.x -= this.speed;
+                }
+            }
+
+            moveRight() {
+                if (this.x < canvas.width - this.width) {
+                    this.x += this.speed;
+                }
+            }
+
+            shoot() {
+                const bullet = new Bullet(this.x + this.width / 2, this.y);
+                bullets.push(bullet);
+            }
+        }
+
+        // Bullet class
+        class Bullet {
+            constructor(x, y) {
+                this.width = 5;
+                this.height = 10;
+                this.x = x - this.width / 2;
+                this.y = y;
+                this.speed = 10;
+                this.color = '#f00';
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+
+            update() {
+                this.y -= this.speed;
+            }
+        }
+
+        // Option class
+        class Option {
+            constructor(text, x, y) {
+                this.text = text;
+                this.x = x;
+                this.y = y;
+                this.width = 100;
+                this.height = 30;
+                this.speed = 2;
+                this.color = '#fff';
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.fillText(this.text, this.x + 10, this.y + 20);
+            }
+
+            update() {
+                this.y += this.speed;
+            }
+        }
+
+        // Initialize the game
+        function init() {
+            player = new Player();
+            bullets = [];
+            options = [];
+            stage = 1;
+            questionCount = 0;
+            score = 0;
+            showQuestion();
+        }
+
+        // Show a new question
+        function showQuestion() {
+            if (questionCount < grammarQuestions.length) {
+                const questionElement = document.getElementById('question');
+                questionElement.textContent = grammarQuestions[questionCount].question;
+
+                const answerOptions = grammarQuestions[questionCount].options;
+                const correctAnswer = grammarQuestions[questionCount].answer;
+
+                answerOptions.sort(() => Math.random() - 0.5);
+
+                for (let i = 0; i < answerOptions.length; i++) {
+                    const optionX = i * (100 + 20) + (canvas.width - answerOptions.length * (100 + 20)) / 2;
+                    const optionY = -30;
+                    const option = new Option(answerOptions[i], optionX, optionY);
+                    options.push(option);
+                }
+            }
+        }
+
+        // Update game objects
+        function update() {
+            // Move bullets
+            bullets.forEach((bullet, index) => {
+                bullet.update();
+
+                // Remove bullets that go off-screen
+                if (bullet.y < 0) {
+                    bullets.splice(index, 1);
+                }
+            });
+
+            // Move options
+            options.forEach((option, index) => {
+                option.update();
+
+                // Check for collision with bullets
+                bullets.forEach((bullet, bulletIndex) => {
+                    if (
+                        bullet.x < option.x + option.width &&
+                        bullet.x + bullet.width > option.x &&
+                        bullet.y < option.y + option.height &&
+                        bullet.y + bullet.height > option.y
+                    ) {
+                        if (option.text === grammarQuestions[questionCount].answer) {
+                            score++;
+                            options = [];
+                            bullets = [];
+                            questionCount++;
+                            if (questionCount === grammarQuestions.length) {
+                                stage++;
+                                questionCount = 0;
+                            }
+                            showQuestion();
+                        } else {
+                            option.speed += 1;
+                        }
+                    }
+                });
+
+                // Check if options reach the bottom of the screen
+                if (option.y > canvas.height) {
+                    // Game over logic
+                    alert('Game Over!');
+                    init();
+                }
+            });
+        }
+
+        // Render game objects
+        function render() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the player
+            player.draw();
+
+            // Draw bullets
+            bullets.forEach(bullet => {
+                bullet.draw();
+            });
+
+            // Draw options
+            options.forEach(option => {
+                option.draw();
+            });
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', event => {
+            if (event.code === 'ArrowLeft') {
+                player.moveLeft();
+            } else if (event.code === 'ArrowRight') {
+                player.moveRight();
+            } else if (event.code === 'Space') {
+                player.shoot();
+            }
+        });
+
+        // Start the game
+        init();
+        gameLoop();
+    </script>
+</body>
+</html>
