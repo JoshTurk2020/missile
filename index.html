@@ -308,7 +308,7 @@
                 question: "If I _____ the chance, I would travel to space.",
                 options: ["have", "had", "would have", "will have"],
                 answer: "had"
-            },
+            }
         ];
 
         // Sounds
@@ -478,109 +478,99 @@
                             spaceships = [];
                             bullets = [];
                             showFullSentence();
-                            questionCount++;
-                            if (questionCount === grammarQuestions.length) {
-                                stage++;
-                                questionCount = 0;
-                            }
-                            setTimeout(showQuestion, 1000);
+                            setTimeout(() => {
+                                questionCount++;
+                                if (questionCount === grammarQuestions.length) {
+                                    stage++;
+                                    questionCount = 0;
+                                }
+                                showQuestion();
+                            }, 1000);
                         } else {
                             option.speed += 1;
                             spaceships[index].speed += 1;
                         }
+                                                // Remove the bullet and spaceship
+                        bullets.splice(bulletIndex, 1);
+                        options.splice(index, 1);
+                        spaceships.splice(index, 1);
+
+                        // Play missile sound
+                        missileSound.currentTime = 0;
+                        missileSound.play();
                     }
                 });
 
-                // Check if options reach the bottom of the screen
+                // Remove options that go off-screen
                 if (option.y > canvas.height) {
-                    // Game over logic
-                    alert('Game Over!');
-                    init();
+                    options.splice(index, 1);
+                    spaceships.splice(index, 1);
                 }
+            });
+
+            // Move spaceships
+            spaceships.forEach((spaceship) => {
+                spaceship.update();
             });
         }
 
-        // Render game objects
-        function render() {
-            // Clear the canvas
+        // Draw everything
+        function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw the player
             player.draw();
-
-            // Draw bullets
-            bullets.forEach(bullet => {
+            bullets.forEach((bullet) => {
                 bullet.draw();
             });
-
-            // Draw options and spaceships
-            options.forEach((option, index) => {
+            options.forEach((option) => {
                 option.draw();
-                spaceships[index].draw();
+            });
+            spaceships.forEach((spaceship) => {
+                spaceship.draw();
             });
         }
 
         // Game loop
         function gameLoop() {
             update();
-            render();
+            draw();
             requestAnimationFrame(gameLoop);
         }
 
-        // Player shoot
-        function playerShoot() {
-            const bullet = new Bullet(player.x + player.width / 2, player.y);
-            bullets.push(bullet);
-            missileSound.play();
-        }
+        // Start the game loop
+        function startGame() {
+            const introScreen = document.getElementById('intro-screen');
+            introScreen.style.display = 'none';
 
-        // Show full sentence with correct answer
-        function showFullSentence() {
-            const questionElement = document.getElementById('question');
-            const answerElement = document.getElementById('answer');
-            const fullSentence = grammarQuestions[questionCount].question.replace('_____', grammarQuestions[questionCount].answer);
-            answerElement.textContent = fullSentence;
-            answerElement.style.opacity = '1';
-            setTimeout(() => {
-                answerElement.style.opacity = '0';
-                questionElement.textContent = '';
-            }, 1000);
+            const gameContainer = document.getElementById('game-container');
+            gameContainer.style.display = 'block';
+
+            init();
+            gameLoop();
         }
 
         // Event listeners
-        document.addEventListener('keydown', event => {
-            if (event.code === 'ArrowLeft') {
+        document.getElementById('start-button').addEventListener('click', startGame);
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') {
                 player.moveLeft();
-            } else if (event.code === 'ArrowRight') {
+            } else if (event.key === 'ArrowRight') {
                 player.moveRight();
-            } else if (event.code === 'Space') {
-                playerShoot();
+            } else if (event.key === ' ') {
+                const bullet = new Bullet(player.x + player.width / 2, player.y);
+                bullets.push(bullet);
             }
         });
 
-        // Touch event listeners for mobile
-        document.addEventListener('touchstart', event => {
-            const touch = event.touches[0];
-            const buttonRect = event.target.getBoundingClientRect();
-
-            if (touch.clientX < window.innerWidth / 2) {
-                player.moveLeft();
-            } else {
-                player.moveRight();
-            }
-        });
-
-        document.addEventListener('touchend', event => {
-            playerShoot();
-        });
-
-        // Start button click event
-        document.getElementById('start-button').addEventListener('click', () => {
-            document.getElementById('intro-screen').style.display = 'none';
-            document.getElementById('game-container').style.display = 'block';
-            init();
-            gameLoop();
-        });
+        // Show full sentence after answering correctly
+        function showFullSentence() {
+            const answerElement = document.getElementById('answer');
+            answerElement.textContent = `Correct! The answer is: ${grammarQuestions[questionCount - 1].answer}`;
+            answerElement.style.opacity = 1;
+            setTimeout(() => {
+                answerElement.style.opacity = 0;
+            }, 1000);
+        }
     </script>
 </body>
 </html>
