@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Grammar Shooter</title>
+    <title>Missile Grammar Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             background-color: #000;
@@ -12,14 +13,16 @@
 
         #game-container {
             position: relative;
-            width: 800px;
-            height: 600px;
+            width: 100%;
+            height: 100vh;
             margin: 0 auto;
         }
 
         #game-canvas {
             background-color: #000;
             border: 2px solid #fff;
+            width: 100%;
+            height: 100%;
         }
 
         #question-container {
@@ -35,6 +38,43 @@
             font-size: 24px;
             font-family: Arial, sans-serif;
         }
+
+        #missile-launcher {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            background-image: url('patriot.png');
+            background-size: cover;
+        }
+
+        .left-button,
+        .right-button {
+            position: absolute;
+            bottom: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            display: none;
+        }
+
+        .left-button {
+            left: 20px;
+        }
+
+        .right-button {
+            right: 20px;
+        }
+
+        @media screen and (max-width: 600px) {
+            .left-button,
+            .right-button {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
@@ -43,6 +83,9 @@
         <div id="question-container">
             <p id="question"></p>
         </div>
+        <div id="missile-launcher"></div>
+        <div class="left-button"></div>
+        <div class="right-button"></div>
     </div>
 
     <script>
@@ -51,13 +94,14 @@
         const ctx = canvas.getContext('2d');
 
         // Set canvas dimensions
-        canvas.width = 800;
-        canvas.height = 600;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
         // Game variables
         let player;
         let bullets = [];
         let options = [];
+        let spaceships = [];
         let stage = 1;
         let questionCount = 0;
         let score = 0;
@@ -75,17 +119,17 @@
         // Player class
         class Player {
             constructor() {
-                this.width = 50;
-                this.height = 50;
+                this.width = 80;
+                this.height = 80;
                 this.x = canvas.width / 2 - this.width / 2;
                 this.y = canvas.height - this.height - 10;
                 this.speed = 5;
-                this.color = '#0f0';
+                this.image = new Image();
+                this.image.src = 'missile-launcher.png';
             }
 
             draw() {
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
             }
 
             moveLeft() {
@@ -152,11 +196,33 @@
             }
         }
 
+        // Spaceship class
+        class Spaceship {
+            constructor(option) {
+                this.option = option;
+                this.width = 120;
+                this.height = 80;
+                this.x = option.x - 10;
+                this.y = option.y - 40;
+                this.image = new Image();
+                this.image.src = 'spaceship.gif';
+            }
+
+            draw() {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+
+            update() {
+                this.y += this.option.speed;
+            }
+        }
+
         // Initialize the game
         function init() {
             player = new Player();
             bullets = [];
             options = [];
+            spaceships = [];
             stage = 1;
             questionCount = 0;
             score = 0;
@@ -179,6 +245,8 @@
                     const optionY = -30;
                     const option = new Option(answerOptions[i], optionX, optionY);
                     options.push(option);
+                    const spaceship = new Spaceship(option);
+                    spaceships.push(spaceship);
                 }
             }
         }
@@ -195,9 +263,10 @@
                 }
             });
 
-            // Move options
+            // Move options and spaceships
             options.forEach((option, index) => {
                 option.update();
+                spaceships[index].update();
 
                 // Check for collision with bullets
                 bullets.forEach((bullet, bulletIndex) => {
@@ -210,6 +279,7 @@
                         if (option.text === grammarQuestions[questionCount].answer) {
                             score++;
                             options = [];
+                            spaceships = [];
                             bullets = [];
                             questionCount++;
                             if (questionCount === grammarQuestions.length) {
@@ -219,6 +289,7 @@
                             showQuestion();
                         } else {
                             option.speed += 1;
+                            spaceships[index].speed += 1;
                         }
                     }
                 });
@@ -245,9 +316,10 @@
                 bullet.draw();
             });
 
-            // Draw options
-            options.forEach(option => {
+            // Draw options and spaceships
+            options.forEach((option, index) => {
                 option.draw();
+                spaceships[index].draw();
             });
         }
 
@@ -267,6 +339,22 @@
             } else if (event.code === 'Space') {
                 player.shoot();
             }
+        });
+
+        // Touch event listeners for mobile
+        document.addEventListener('touchstart', event => {
+            const touch = event.touches[0];
+            const buttonRect = event.target.getBoundingClientRect();
+
+            if (touch.clientX < window.innerWidth / 2) {
+                player.moveLeft();
+            } else {
+                player.moveRight();
+            }
+        });
+
+        document.addEventListener('touchend', event => {
+            player.shoot();
         });
 
         // Start the game
