@@ -27,7 +27,7 @@
 
         #question-container {
             position: absolute;
-            bottom: 20px;
+            top: 20px;
             left: 0;
             right: 0;
             text-align: center;
@@ -37,6 +37,14 @@
             color: #fff;
             font-size: 24px;
             font-family: Arial, sans-serif;
+        }
+
+        #answer {
+            color: #0f0;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            opacity: 0;
+            transition: opacity 0.5s;
         }
 
         #missile-launcher {
@@ -114,6 +122,7 @@
         <canvas id="game-canvas"></canvas>
         <div id="question-container">
             <p id="question"></p>
+            <p id="answer"></p>
         </div>
         <div id="missile-launcher"></div>
         <div class="left-button"></div>
@@ -312,7 +321,7 @@
                 this.height = 80;
                 this.x = canvas.width / 2 - this.width / 2;
                 this.y = canvas.height - this.height - 10;
-                this.speed = 5;
+                this.speed = 10;
                 this.image = new Image();
                 this.image.src = 'patriot.png';
             }
@@ -363,7 +372,7 @@
                 this.y = y;
                 this.width = 100;
                 this.height = 30;
-                this.speed = 2;
+                this.speed = 1;
                 this.color = '#fff';
             }
 
@@ -468,12 +477,13 @@
                             options = [];
                             spaceships = [];
                             bullets = [];
+                            showFullSentence();
                             questionCount++;
                             if (questionCount === grammarQuestions.length) {
                                 stage++;
                                 questionCount = 0;
                             }
-                            showQuestion();
+                            setTimeout(showQuestion, 1000);
                         } else {
                             option.speed += 1;
                             spaceships[index].speed += 1;
@@ -522,6 +532,19 @@
             const bullet = new Bullet(player.x + player.width / 2, player.y);
             bullets.push(bullet);
             missileSound.play();
+        }
+
+        // Show full sentence with correct answer
+        function showFullSentence() {
+            const questionElement = document.getElementById('question');
+            const answerElement = document.getElementById('answer');
+            const fullSentence = grammarQuestions[questionCount].question.replace('_____', grammarQuestions[questionCount].answer);
+            answerElement.textContent = fullSentence;
+            answerElement.style.opacity = '1';
+            setTimeout(() => {
+                answerElement.style.opacity = '0';
+                questionElement.textContent = '';
+            }, 1000);
         }
 
         // Event listeners
