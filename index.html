@@ -3,51 +3,114 @@
 <head>
     <title>Missile Grammar Game</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="nonexistent.ico">
     <style>
         body {
             background-color: #000;
             margin: 0;
             padding: 0;
             overflow: hidden;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
         }
 
         #game-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            margin: 0 auto;
+        }
+
+        #game-canvas {
+            background-color: #000;
+            border: 2px solid #fff;
+            width: 100%;
+            height: 100%;
+        }
+
+        #question-container {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+        }
+
+        #question {
+            color: #fff;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+        }
+
+        #missile-launcher {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            background-image: url('patriot.png');
+            background-size: cover;
+        }
+
+        .left-button,
+        .right-button {
+            position: absolute;
+            bottom: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
             display: none;
         }
 
-        button {
-            padding: 10px 20px;
-            font-size: 18px;
-            background-color: #007bff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            color: #fff;
+        .left-button {
+            left: 20px;
+        }
+
+        .right-button {
+            right: 20px;
+        }
+
+        @media screen and (max-width: 600px) {
+            .left-button,
+            .right-button {
+                display: block;
+            }
         }
 
         #intro-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
             display: flex;
             flex-direction: column;
+            justify-content: center;
             align-items: center;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            z-index: 9999;
+        }
+
+        #start-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #fff;
+            color: #000;
+            border: none;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div id="intro-screen">
-        <h1>Welcome to Missile Grammar Game!</h1>
-        <p>Defend the Earth from a Grammar Invasion!</p>
+        <h1>Welcome to the Grammar Invasion Game!</h1>
         <button id="start-button">Start Game</button>
     </div>
 
-    <div id="game-container">
+    <div id="game-container" style="display: none;">
         <canvas id="game-canvas"></canvas>
         <div id="question-container">
             <p id="question"></p>
@@ -75,13 +138,14 @@
         let questionCount = 0;
         let score = 0;
 
-        // Sound effect
-        const missileSound = new Audio('lazer.mp3');
-
         // Grammar questions and answer options
         const grammarQuestions = [
             {
                 question: "She _____ her homework every day.",
+                options: ["do", "does", "is doing", "did"],
+                answer: "does"
+            },
+                           question: "She _____ her homework every day.",
                 options: ["do", "does", "is doing", "did"],
                 answer: "does"
                 },
@@ -235,8 +299,10 @@
                 options: ["have", "had", "would have", "will have"],
                 answer: "had"
                 },
-            // Add more questions here...
-        ];
+           ];
+
+        // Sounds
+        const missileSound = new Audio('lazer.mp3');
 
         // Player class
         class Player {
@@ -264,12 +330,6 @@
                 if (this.x < canvas.width - this.width) {
                     this.x += this.speed;
                 }
-            }
-
-            shoot() {
-                missileSound.play();
-                const bullet = new Bullet(this.x + this.width / 2, this.y);
-                bullets.push(bullet);
             }
         }
 
@@ -333,6 +393,9 @@
 
             draw() {
                 ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.fillText(this.option.text, this.x + 10, this.y + 20);
             }
 
             update() {
@@ -350,8 +413,6 @@
             questionCount = 0;
             score = 0;
             showQuestion();
-            document.getElementById('intro-screen').style.display = 'none';
-            document.getElementById('game-container').style.display = 'block';
         }
 
         // Show a new question
@@ -455,16 +516,21 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Event listeners
-        document.getElementById('start-button').addEventListener('click', init);
+        // Player shoot
+        function playerShoot() {
+            const bullet = new Bullet(player.x + player.width / 2, player.y);
+            bullets.push(bullet);
+            missileSound.play();
+        }
 
+        // Event listeners
         document.addEventListener('keydown', event => {
             if (event.code === 'ArrowLeft') {
                 player.moveLeft();
             } else if (event.code === 'ArrowRight') {
                 player.moveRight();
             } else if (event.code === 'Space') {
-                player.shoot();
+                playerShoot();
             }
         });
 
@@ -481,12 +547,16 @@
         });
 
         document.addEventListener('touchend', event => {
-            player.shoot();
+            playerShoot();
         });
 
-        // Start the game
-        // init();
-        // gameLoop();
+        // Start button click event
+        document.getElementById('start-button').addEventListener('click', () => {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            init();
+            gameLoop();
+        });
     </script>
 </body>
 </html>
